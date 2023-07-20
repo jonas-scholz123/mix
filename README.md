@@ -1,2 +1,2 @@
 # mix
-Mix datasets easily and extensibly.
+Mix python datasets easily and extensibly.
