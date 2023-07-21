@@ -31,16 +31,18 @@ class Dataset(ABC):
 class InfiniteDataset(Dataset, RNGUser):
     def __init__(
         self,
-        parent_vars: Dict[str, Continuous] = {},
         seed: int = 42,
     ) -> None:
         self.seed = seed
-        self.parent_vars = parent_vars
+        self.parent_vars = self.get_parent_vars()
         super().__init__()
 
     @abstractmethod
     def gen_sample(self, **kwargs):
-        return
+        pass
+
+    def get_parent_vars(self) -> Dict[str, Continuous]:
+        return {}
 
     def sample_parent_vars(self):
         return {name: dist.sample() for name, dist in self.parent_vars.items()}
@@ -71,7 +73,7 @@ class MixedInfiniteDataset(InfiniteDataset):
         if self.ps is not None and len(self.datasets) != len(self.ps):
             raise ValueError("Datasets and probabilities have different lengths.")
 
-        super().__init__({}, seed)
+        super().__init__(seed)
 
     def gen_sample(self):
         ds = self.rng.choice(self.datasets, p=self.ps)
@@ -145,15 +147,19 @@ class MyFiniteDataset(FiniteDataset):
 
 class MyInfiniteDataset(InfiniteDataset):
     def __init__(self, lmin, lmax, power) -> None:
-        super().__init__(
-            {
-                "l": UniformContinuous(lmin, lmax),
-                "frac": PowerContinuous(power=power),
-            }
-        )
+        self.lmin = lmin
+        self.lmax = lmax
+        self.power = power
+        super().__init__()
 
     def gen_sample(self, l=None, frac=None):
         return frac * l
+
+    def get_parent_vars(self) -> Dict[str, Continuous]:
+        return {
+            "l": UniformContinuous(self.lmin, self.lmax),
+            "frac": PowerContinuous(power=self.power),
+        }
 
 
 ds = MyFiniteDataset()
